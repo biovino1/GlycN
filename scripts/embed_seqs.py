@@ -60,15 +60,13 @@ def embed_seqs(seqs: list):
     model.to_device(device)
 
     # Embed each sequence and write to file
-    embeds = []
+    if not os.path.exists('data/embeds'):
+        os.makedirs('data/embeds')
     for seq in seqs:
         logging.info('Embedding %s', seq[0])
         embed = Embedding(seq[0], seq[1])
         embed.esm2_embed(model, device, layer=17)
-        embeds.append(embed)
-    write_embeds('data/embeds.npy', embeds)
-
-
+        embed.write_embed(f'data/embeds/{seq[0]}.npy')
 
 
 def main():

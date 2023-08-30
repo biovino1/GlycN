@@ -72,6 +72,6 @@ class Embedding:
         :param embeds: list of 
         """
 
-        embed = np.array([self.id, self.embed], dtype=object)
+        embed = np.array([self.id, self.seq, self.embed], dtype=object)
         with open(file, 'wb') as efile:  #pylint: disable=W1514
             np.save(efile, embed)

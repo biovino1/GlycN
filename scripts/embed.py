@@ -37,9 +37,9 @@ class Model:
 class Embedding:
     """Stores embeddings for a single protein sequence.
     """
-    id: str
-    seq: str
-    embed: np.ndarray = None
+    id: str = ''
+    seq: str = ''
+    embed: [np.ndarray] = None
 
 
     def esm2_embed(self, model: Model, device: str, layer: int):
@@ -64,14 +64,43 @@ class Embedding:
         self.embed = embed[0]
 
 
-    def write_embed(self, file: str):
+    def write(self, file: str):
         """Writes a single embedding to a file as an array. First index is id, second is the
         embedding.
 
         :param file: path to file
-        :param embeds: list of 
         """
 
         embed = np.array([self.id, self.seq, self.embed], dtype=object)
         with open(file, 'wb') as efile:  #pylint: disable=W1514
             np.save(efile, embed)
+
+
+    def load(self, file: str):
+        """Loads a single embedding from a file.
+
+        :param file: path to file
+        """
+
+        with open(file, 'rb') as efile:
+            embed = np.load(efile, allow_pickle=True)
+        self.id = embed[0]
+        self.seq = embed[1]
+        self.embed = embed[2]
+
+
+    def comb(self, emb):
+        """Combines two embeddings.
+        
+        :param emb: Embedding class
+        """
+
+        # If self is empty, copy emb
+        if self.id == '':
+            self.id = emb.id
+            self.seq = emb.seq
+            self.embed = emb.embed
+            return
+
+        self.seq += emb.seq
+        self.embed = np.concatenate(([self.embed, emb.embed]), axis=0)

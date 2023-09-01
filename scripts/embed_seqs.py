@@ -6,7 +6,6 @@ __date__ = "08/28/23"
 
 import logging
 import os
-import numpy as np
 import torch
 from Bio import SeqIO
 from embed import Model, Embedding
@@ -34,21 +33,6 @@ def load_seqs(file: str) -> list:
     return seqs
 
 
-def write_embeds(file: str, embed_list: list):
-    """Writes multiple embeddings to a file as an array. For each entry, first index is id,
-    second is the embedding.
-
-    :param file: path to file
-    :param embeds: list of embeddings
-    """
-
-    # For each index in list, replace with array of id and embedding
-    for i, embed in enumerate(embed_list):
-        embed_list[i] = np.array([embed.id, embed.embed], dtype=object)
-    with open(file, 'wb') as efile:
-        np.save(efile, embed_list)
-
-
 def embed_seqs(seqs: list):
     """Embeds a list of sequences and writes them to a file.
 
@@ -60,13 +44,59 @@ def embed_seqs(seqs: list):
     model.to_device(device)
 
     # Embed each sequence and write to file
-    if not os.path.exists('data/embeds'):
-        os.makedirs('data/embeds')
+    direc = 'data/embeds'
+    if not os.path.exists(direc):
+        os.makedirs(direc)
     for seq in seqs:
+
+        # Skip existing embeddings
+        if os.path.exists(f'{direc}/{seq[0]}.npy'):
+            logging.info('Skipping %s', seq[0])
+            continue
+
+        # If sequence is too long, split into chunks
+        if len(seq[1]) > 5000:
+            logging.info('Splitting %s', seq[0])
+            chunks = [seq[1][i:i+5000] for i in range(0, len(seq[1]), 5000)]
+
+            # Initialize each split and embed
+            embed = Embedding()
+            for i, chunk in enumerate(chunks):
+                embed.id, embed.seq = seq[0], chunk
+                embed.esm2_embed(model, device, layer=17)
+                embed.write(f'{direc}/{seq[0]}_{i}.npy')
+            continue
+
+        # Initialize object and embed
         logging.info('Embedding %s', seq[0])
         embed = Embedding(seq[0], seq[1])
         embed.esm2_embed(model, device, layer=17)
-        embed.write_embed(f'data/embeds/{seq[0]}.npy')
+        embed.write(f'{direc}/{seq[0]}.npy')
+
+
+def combine_embeds():
+    """Combines split embeddings into one file.
+    """
+
+    # Get list of split embeddings
+    embeds = {}
+    prev_file = ''
+    for file in sorted(os.listdir('data/embeds')):
+        name = file.split('_')[0]
+        if name == prev_file.split('_', maxsplit=1)[0]:
+            embeds[name] = embeds.get(name, set()) | set([prev_file, file])
+            embeds[name] = sorted(embeds[name])
+        prev_file = file
+
+    # Combine embeds for each key in dict
+    for name, files in embeds.items():
+        total_embed = Embedding()
+        for file in files:
+            part_embed = Embedding()
+            part_embed.load(f'data/embeds/{file}')
+            os.remove(f'data/embeds/{file}')
+            total_embed.comb(part_embed)
+        total_embed.write(f'data/embeds/{name}.npy')
 
 
 def main():
@@ -76,7 +106,7 @@ def main():
     file = 'data/seqs.txt'
     seqs = load_seqs(file)
     embed_seqs(seqs)
-
+    combine_embeds()
 
 
 if __name__ == '__main__':

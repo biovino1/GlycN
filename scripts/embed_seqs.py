@@ -85,7 +85,7 @@ def combine_embeds():
         name = file.split('_')[0]
         if name == prev_file.split('_', maxsplit=1)[0]:
             embeds[name] = embeds.get(name, set()) | set([prev_file, file])
-            embeds[name] = sorted(embeds[name])
+            embeds[name] = set(sorted(embeds[name]))  # sorted returns a list
         prev_file = file
 
     # Combine embeds for each key in dict
@@ -94,7 +94,6 @@ def combine_embeds():
         for file in files:
             part_embed = Embedding()
             part_embed.load(f'data/embeds/{file}')
-            os.remove(f'data/embeds/{file}')
             total_embed.comb(part_embed)
         total_embed.write(f'data/embeds/{name}.npy')
 

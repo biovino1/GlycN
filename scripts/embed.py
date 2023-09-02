@@ -36,10 +36,14 @@ class Model:
 @dataclass
 class Embedding:
     """Stores embeddings for a single protein sequence.
+
+    :param id: sequence ID
+    :param seq: protein sequence
+    :param embed: embedding vector
     """
     id: str = ''
     seq: str = ''
-    embed: [np.ndarray] = None
+    embed: np.ndarray = None
 
 
     def esm2_embed(self, model: Model, device: str, layer: int):
@@ -104,3 +108,20 @@ class Embedding:
 
         self.seq += emb.seq
         self.embed = np.concatenate(([self.embed, emb.embed]), axis=0)
+
+
+@dataclass
+class GlycEmb:
+    """Stores a single embedding vector and several attributes.
+
+    :param id: sequence ID
+    :param emb: embedding vector
+    :param pos: position of asparagine residue
+    :param label: glycosylation label (1 = glycosylated, 0 = not glycosylated)
+    :param sources: types of tissue
+    """
+    id: str = ''
+    emb: np.ndarray = None
+    pos: int = 0
+    label: int = 0
+    sources: str = ''

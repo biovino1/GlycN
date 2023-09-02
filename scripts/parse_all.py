@@ -4,6 +4,8 @@ __author__ = "Ben Iovino"
 __date__ = 08/28/2023
 """
 
+import os
+import urllib.request
 import pandas as pd
 import requests
 
@@ -28,7 +30,7 @@ def get_seqs(sites, sources):
 
         # Write id, sites, and sequence to file
         with open('data/seqs.txt', 'a', encoding='utf8') as sfile:
-            sfile.write(f'>{seq}    {site}   {source}\n')
+            sfile.write(f'>{seq}\t{site}\t{source}\n')
             sfile.write(f'{fasta}\n')
 
 
@@ -58,6 +60,10 @@ def main():
     """Main
     """
 
+    if not os.path.exists('data'):
+        os.makedirs('data')
+    urllib.request.urlretrieve('http://nglycositeatlas.biomarkercenter.org/download/HumanAll/',
+                                'data/HumanAll.xlsx')
     file = 'data/HumanAll.xlsx'
     sites, sources = get_info(file)
     get_seqs(sites, sources)

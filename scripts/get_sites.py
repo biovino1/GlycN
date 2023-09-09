@@ -11,24 +11,20 @@ from embed import Embedding, GlycEmb
 
 
 def get_sites(sfile: str) -> dict:
-    """Returns asparagine positions and glycosylation labels from a fasta file.
+    """Returns glycosylated asparagine residues for each sequence fin a asta file.
 
     :param sfile: fasta file
     :return dict: dictionary where key is seq ID and value is a dict of asparagine positions
-    and a label indicating if they are glycosylated (1 = glycosylated, 0 = not glycosylated)
     """
 
     seqs = {}
     for seq in SeqIO.parse(sfile, 'fasta'):
-        glyc_pos = seq.description.split('\t')[1].split(';')
-        glyc_tissue = seq.description.split('\t')[2]
+        glyc_pos = seq.description.split('\t')[1].split(':')  # Sites in fasta header
+        glyc_tissue = seq.description.split('\t')[2]  # Tissue sources
         seqs[seq.id] = {}
         for i, res in enumerate(seq.seq):
-            if res == 'N':
-                if str(i+1) in glyc_pos:
-                    seqs[seq.id][i] = 1
-                else:
-                    seqs[seq.id][i] = 0
+            if res == 'N' and str(i+1) in glyc_pos:  # i+1 because indexing starts at 0
+                seqs[seq.id][i] = 1  # 0 indexing as key to get embedding later on
         seqs[seq.id]['sources'] = glyc_tissue
 
     return seqs
@@ -55,7 +51,7 @@ def get_embeds(edirec: str, seqs: dict):
             n_embeds.append(n_embed)
 
     # Write embeddings to file
-    with open('data/embeds.npy', 'wb') as efile:  #pylint: disable=W1514
+    with open('data/glyc_embeds.npy', 'wb') as efile:  #pylint: disable=W1514
         np.save(efile, n_embeds)
 
 

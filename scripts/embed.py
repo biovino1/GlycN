@@ -125,3 +125,4 @@ class GlycEmb:
     pos: int = 0
     label: int = 0
     sources: str = ''
+    cluster: int = 0

@@ -62,9 +62,9 @@ def main():
 
     if not os.path.exists('data'):
         os.makedirs('data')
-    urllib.request.urlretrieve('http://nglycositeatlas.biomarkercenter.org/download/HumanAll/',
-                                'data/HumanAll.xlsx')
+    url = 'http://nglycositeatlas.biomarkercenter.org/download/HumanAll/'
     file = 'data/HumanAll.xlsx'
+    urllib.request.urlretrieve(url, file)
     sites, sources = get_info(file)
     get_seqs(sites, sources)
 

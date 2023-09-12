@@ -10,7 +10,7 @@ import re
 import urllib.request
 
 
-def check_list(row: list) -> tuple:
+def check_locs(row: list) -> tuple:
     """Checks a row from csv file to see if it is a nuclear or mitochondrial protein
 
     :param row: row from csv in a list
@@ -46,7 +46,7 @@ def get_seqs(file: str) -> dict:
         for row in reader:
 
             # Get sequence if nuclear or mitochondrial
-            mito, nuclear = check_list(row)
+            mito, nuclear = check_locs(row)
             if mito or nuclear:
                 seqs[row[1]] = [mito, nuclear, row[15]]
 
@@ -65,16 +65,43 @@ def get_sequons(seqs: dict) -> dict:
         seq = tup[2]
         matches = re.finditer(r'N[^P][ST]', seq)
         for match in matches:
-            print(match)
             seqs[acc].append(match.start())
 
-        # If no sequons, remove from dict
+        # If no sequons were added to the list, delete the accession
         if len(seqs[acc]) == 3:
             del_list.append(acc)
+
+    # Can't delete while iterating so delete here
     for acc in del_list:
         del seqs[acc]
 
     return seqs
+
+
+def write_seqs(seqs: dict):
+    """Writes sequences in a dictionary to one fasta file.
+
+    :param seqs: dict where key is ACC and value is list of [mito, nuclear, sequence]
+    """
+
+    for seq, values in seqs.items():
+
+        # Get subcellular locations
+        sources = []
+        if values[0]:  # if mt is True
+            sources.append('mitochondria')
+        if values[1]:  # if nucleus is True
+            sources.append('nucleus')
+        sources = ';'.join(sources)
+
+        # Get sequon locations
+        sites = values[3:]
+        sites = ':'.join([str(s) for s in sites])  # Convert ints to strings for writing
+
+        # Write id, subcellular location, sequon locations, and sequnce to file
+        with open('data/neg_seqs.txt', 'a', encoding='utf8') as sfile:
+            sfile.write(f'>{seq}\t{sites}\t{sources}\n')
+            sfile.write(f'{values[2]}\n')
 
 
 def main():
@@ -90,6 +117,7 @@ def main():
     # Get sequences
     seqs = get_seqs(file)
     seqs = get_sequons(seqs)
+    write_seqs(seqs)
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 
 
-def get_seqs(sites, sources):
+def get_seqs(sites: dict, sources: dict):
     """Writes each accession ID, glycosite, id resource, and fasta seq to file in
     fasta format.
 

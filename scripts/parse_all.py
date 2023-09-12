@@ -29,7 +29,7 @@ def get_seqs(sites: dict, sources: dict):
         fasta = ''.join(req.text.split('\n')[1:])
 
         # Write id, sites, and sequence to file
-        with open('data/seqs.txt', 'a', encoding='utf8') as sfile:
+        with open('data/pos_seqs.txt', 'a', encoding='utf8') as sfile:
             sfile.write(f'>{seq}\t{site}\t{source}\n')
             sfile.write(f'{fasta}\n')
 

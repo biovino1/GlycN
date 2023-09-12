@@ -33,10 +33,11 @@ def load_seqs(file: str) -> list:
     return seqs
 
 
-def embed_seqs(seqs: list):
+def embed_seqs(seqs: list, direc: str):
     """Embeds a list of sequences and writes them to a file.
 
     :param seqs: list of sequences
+    :param direc: directory to write files to
     """
 
     model = Model()  # ESM2 encoder and tokenizer
@@ -44,7 +45,6 @@ def embed_seqs(seqs: list):
     model.to_device(device)
 
     # Embed each sequence and write to file
-    direc = 'data/embeds'
     if not os.path.exists(direc):
         os.makedirs(direc)
     for seq in seqs:
@@ -74,14 +74,16 @@ def embed_seqs(seqs: list):
         embed.write(f'{direc}/{seq[0]}.npy')
 
 
-def combine_embeds():
+def combine_embeds(direc: str):
     """Combines split embeddings into one file.
+
+    :param direc: directory containing embeddings
     """
 
     # Get list of split embeddings
     embeds = {}
     prev_file = ''
-    for file in sorted(os.listdir('data/embeds')):
+    for file in sorted(os.listdir(direc)):
         name = file.split('_')[0]
         if name == prev_file.split('_', maxsplit=1)[0]:
             embeds[name] = embeds.get(name, set()) | set([prev_file, file])
@@ -93,19 +95,20 @@ def combine_embeds():
         total_embed = Embedding()
         for file in files:
             part_embed = Embedding()
-            part_embed.load(f'data/embeds/{file}')
+            part_embed.load(f'{direc}/{file}')
             total_embed.comb(part_embed)
-        total_embed.write(f'data/embeds/{name}.npy')
+        total_embed.write(f'{direc}/{name}.npy')
 
 
 def main():
     """Main
     """
 
-    file = 'data/seqs.txt'
+    direc = 'data/neg_embeds'
+    file = 'data/neg_seqs.txt'
     seqs = load_seqs(file)
-    embed_seqs(seqs)
-    combine_embeds()
+    embed_seqs(seqs, direc)
+    combine_embeds(direc)
 
 
 if __name__ == '__main__':

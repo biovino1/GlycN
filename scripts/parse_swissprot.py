@@ -65,7 +65,7 @@ def get_sequons(seqs: dict) -> dict:
         seq = tup[2]
         matches = re.finditer(r'N[^P][ST]', seq)
         for match in matches:
-            seqs[acc].append(match.start())
+            seqs[acc].append(match.start()+1)  # +1 because indexing starts at 0
 
         # If no sequons were added to the list, delete the accession
         if len(seqs[acc]) == 3:

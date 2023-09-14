@@ -11,7 +11,7 @@ from embed import Embedding, GlycEmb
 
 
 def get_sites(sfile: str) -> dict:
-    """Returns glycosylated asparagine residues for each sequence fin a asta file.
+    """Returns glycosylated asparagine residues for each sequence in a fasta file.
 
     :param sfile: fasta file
     :return dict: dictionary where key is seq ID and value is a dict of asparagine positions
@@ -51,7 +51,7 @@ def get_embeds(edirec: str, seqs: dict):
             n_embeds.append(n_embed)
 
     # Write embeddings to file
-    with open('data/glyc_embeds.npy', 'wb') as efile:  #pylint: disable=W1514
+    with open('data/nonglyc_embeds.npy', 'wb') as efile:  #pylint: disable=W1514
         np.save(efile, n_embeds)
 
 
@@ -59,9 +59,10 @@ def main():
     """Main
     """
 
-    sfile = 'data/seqs.txt'
+    sfile = 'data/neg_seqs.txt'
     seqs = get_sites(sfile)
-    edirec = 'data/embeds'
+    print(seqs)
+    edirec = 'data/neg_embeds'
     get_embeds(edirec, seqs)
 
 

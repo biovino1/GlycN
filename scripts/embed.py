@@ -115,10 +115,11 @@ class GlycEmb:
     """Stores a single embedding vector and several attributes.
 
     :param id: sequence ID
-    :param emb: embedding vector
-    :param pos: position of asparagine residue
+    :param emb: embedding vector for asparagine residue
+    :param pos: position of asparagine residue in protein sequence
     :param label: glycosylation label (1 = glycosylated, 0 = not glycosylated)
-    :param sources: types of tissue
+    :param sources: subcellular location or tissue type
+    :param cluster: cluster group
     """
     id: str = ''
     emb: np.ndarray = None

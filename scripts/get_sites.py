@@ -11,20 +11,19 @@ from embed import Embedding, GlycEmb
 
 
 def get_sites(sfile: str) -> dict:
-    """Returns glycosylated asparagine residues for each sequence in a fasta file.
+    """Returns sequon positions and sources for each sequence in a fasta file.
 
     :param sfile: fasta file
-    :return dict: dictionary where key is seq ID and value is a dict of asparagine positions
+    :return dict: dictionary where key is seq ID and value is a dict with sequon positions
+    and subcellular/tissue sources
     """
 
     seqs = {}
     for seq in SeqIO.parse(sfile, 'fasta'):
-        glyc_pos = seq.description.split('\t')[1].split(':')  # Sites in fasta header
-        glyc_tissue = seq.description.split('\t')[2]  # Tissue sources
         seqs[seq.id] = {}
-        for i, res in enumerate(seq.seq):
-            if res == 'N' and str(i+1) in glyc_pos:  # i+1 because indexing starts at 0
-                seqs[seq.id][i] = 1  # 0 indexing as key to get embedding later on
+        glyc_pos = seq.description.split('\t')[1].split(':')  # Sites in fasta header
+        seqs[seq.id]['glyc_pos'] = [int(pos) for pos in glyc_pos]
+        glyc_tissue = seq.description.split('\t')[2]  # Tissue sources
         seqs[seq.id]['sources'] = glyc_tissue
 
     return seqs
@@ -45,9 +44,8 @@ def get_embeds(edirec: str, seqs: dict):
         # Get embeddings for each asparagine residue
         n_seqs = seqs[embed.id]
         sources = n_seqs['sources']
-        del n_seqs['sources']
-        for pos, label in n_seqs.items():
-            n_embed = GlycEmb(embed.id, embed.embed[pos], pos+1, label, sources)
+        for pos in seqs[embed.id]['glyc_pos']:
+            n_embed = GlycEmb(embed.id, embed.embed[pos], pos, sources, 1)
             n_embeds.append(n_embed)
 
     # Write embeddings to file
@@ -61,7 +59,6 @@ def main():
 
     sfile = 'data/neg_seqs.txt'
     seqs = get_sites(sfile)
-    print(seqs)
     edirec = 'data/neg_embeds'
     get_embeds(edirec, seqs)
 

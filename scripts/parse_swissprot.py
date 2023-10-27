@@ -6,6 +6,7 @@ __date__ = 08/28/2023
 """
 
 import csv
+import os
 import re
 import urllib.request
 
@@ -109,6 +110,8 @@ def main():
     """
 
     # Download file
+    if not os.path.exists('data'):
+        os.makedirs('data')
     url = 'https://services.healthtech.dtu.dk/services/DeepLoc-2.0/data/' \
         'Swissprot_Train_Validation_dataset.csv'
     file = 'data/Swissprot_Train_Validation_dataset.csv'

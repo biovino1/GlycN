@@ -60,11 +60,14 @@ def main():
     """Main
     """
 
+    # Download file
     if not os.path.exists('data'):
         os.makedirs('data')
     url = 'http://nglycositeatlas.biomarkercenter.org/download/HumanAll/'
     file = 'data/HumanAll.xlsx'
     urllib.request.urlretrieve(url, file)
+
+    # Get sequences
     sites, sources = get_info(file)
     get_seqs(sites, sources)
 

@@ -124,5 +124,6 @@ class GlycEmb:
     id: str = ''
     emb: np.ndarray = None
     pos: int = 0
+    label: int = 0
     sources: str = ''
     label: int = 0

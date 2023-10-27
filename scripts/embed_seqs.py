@@ -7,6 +7,7 @@ __date__ = "08/28/23"
 import logging
 import os
 import torch
+import numpy as np
 from Bio import SeqIO
 from embed import Model, Embedding
 
@@ -33,11 +34,37 @@ def load_seqs(file: str) -> list:
     return seqs
 
 
-def embed_seqs(seqs: list, direc: str):
+def split_embeds(seq: tuple, model: Model, device: str) -> Embedding:
+    """Returns embedding of a protein sequence > 5000 residues.
+
+    :param seq: tuple of ID and sequence
+    :param model: Model class with encoder and tokenizer
+    :param device: gpu/cpu
+    """
+
+    # Split sequence into chunks
+    embeds = []
+    chunks = [seq[1][i:i+5000] for i in range(0, len(seq[1]), 5000)]
+
+    # Initialize each split and embed
+    embed = Embedding()
+    for i, chunk in enumerate(chunks):
+        embed.id, embed.seq = seq[0], chunk
+        embed.esm2_embed(model, device, layer=17)
+        embeds.append(embed)
+
+    # Combine embeddings
+    total_embed = Embedding()
+    for embed in embeds:
+        total_embed.comb(embed)
+
+    return total_embed
+
+
+def embed_seqs(seqs: list):
     """Embeds a list of sequences and writes them to a file.
 
     :param seqs: list of sequences
-    :param direc: directory to write files to
     """
 
     model = Model()  # ESM2 encoder and tokenizer
@@ -45,33 +72,27 @@ def embed_seqs(seqs: list, direc: str):
     model.to_device(device)
 
     # Embed each sequence and write to file
-    if not os.path.exists(direc):
-        os.makedirs(direc)
-    for seq in seqs:
-
-        # Skip existing embeddings
-        if os.path.exists(f'{direc}/{seq[0]}.npy'):
-            logging.info('Skipping %s', seq[0])
-            continue
+    embeds = []
+    for i, seq in enumerate(seqs):
 
         # If sequence is too long, split into chunks
         if len(seq[1]) > 5000:
-            logging.info('Splitting %s', seq[0])
-            chunks = [seq[1][i:i+5000] for i in range(0, len(seq[1]), 5000)]
-
-            # Initialize each split and embed
-            embed = Embedding()
-            for i, chunk in enumerate(chunks):
-                embed.id, embed.seq = seq[0], chunk
-                embed.esm2_embed(model, device, layer=17)
-                embed.write(f'{direc}/{seq[0]}_{i}.npy')
+            logging.info('Splitting %s (%s)', seq[0], i)
+            embed = split_embeds(seq, model, device)
+            embeds.append(embed)
             continue
 
         # Initialize object and embed
-        logging.info('Embedding %s', seq[0])
+        logging.info('Embedding %s (%s)', seq[0], i)
         embed = Embedding(seq[0], seq[1])
         embed.esm2_embed(model, device, layer=17)
-        embed.write(f'{direc}/{seq[0]}.npy')
+        embeds.append(embed)
+
+        if i > 5:
+            break
+
+    with open('embeds.npy', 'wb') as dfile:
+        np.save(dfile, embeds)
 
 
 def combine_embeds(direc: str):
@@ -104,11 +125,9 @@ def main():
     """Main
     """
 
-    direc = 'data/neg_embeds'
-    file = 'data/neg_seqs.txt'
+    file = 'data/all_seqs.txt'
     seqs = load_seqs(file)
-    embed_seqs(seqs, direc)
-    combine_embeds(direc)
+    embed_seqs(seqs)
 
 
 if __name__ == '__main__':

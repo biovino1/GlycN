@@ -4,10 +4,9 @@ __author__ = "Ben Iovino"
 __date__ = "09/1/23"
 """
 
-import os
 import numpy as np
 from Bio import SeqIO
-from embed import Embedding, GlycEmb
+from embed import GlycEmb
 
 
 def get_sites(sfile: str) -> dict:
@@ -29,17 +28,19 @@ def get_sites(sfile: str) -> dict:
     return seqs
 
 
-def get_embeds(edirec: str, seqs: dict):
+def get_embeds(efile: str, seqs: dict):
     """Writes embeddings for each asparagine residue in each sequence to one file.
     
-    :param edirec: directory containing embeddings
+    :param edirec: file containing embeddings
     :param seqs: dictionary of asparagine positions, glycosylation labels, and tissue sources
     """
 
+    # Load embeddings
+    embeddings = np.load(efile, allow_pickle=True)
+
+    # Get individual embeddings for each asparagine residue
     n_embeds = []
-    for efile in os.listdir(edirec):
-        embed = Embedding()
-        embed.load(os.path.join(edirec, efile))
+    for embed in embeddings:
 
         # Get embeddings for each asparagine residue
         n_seqs = seqs[embed.id]
@@ -49,7 +50,7 @@ def get_embeds(edirec: str, seqs: dict):
             n_embeds.append(n_embed)
 
     # Write embeddings to file
-    with open('data/nonglyc_embeds.npy', 'wb') as efile:  #pylint: disable=W1514
+    with open('data/N_embeds.npy', 'wb') as efile:  #pylint: disable=W1514
         np.save(efile, n_embeds)
 
 
@@ -57,10 +58,8 @@ def main():
     """Main
     """
 
-    sfile = 'data/neg_seqs.txt'
-    seqs = get_sites(sfile)
-    edirec = 'data/neg_embeds'
-    get_embeds(edirec, seqs)
+    seqs = get_sites('data/all_seqs.txt')
+    get_embeds('data/embeds.npy', seqs)
 
 
 if __name__ == '__main__':

@@ -20,10 +20,12 @@ def get_sites(sfile: str) -> dict:
     seqs = {}
     for seq in SeqIO.parse(sfile, 'fasta'):
         seqs[seq.id] = {}
-        glyc_pos = seq.description.split('\t')[1].split(':')  # Sites in fasta header
+        info = seq.description.split('\t')
+        glyc_pos = info[1].split(':')  # Sites in fasta header
         seqs[seq.id]['glyc_pos'] = [int(pos) for pos in glyc_pos]
-        glyc_tissue = seq.description.split('\t')[2]  # Tissue sources
+        glyc_tissue = info[2]  # Tissue sources
         seqs[seq.id]['sources'] = glyc_tissue
+        seqs[seq.id]['label'] = info[3]
 
     return seqs
 
@@ -46,7 +48,7 @@ def get_embeds(efile: str, seqs: dict):
         n_seqs = seqs[embed.id]
         sources = n_seqs['sources']
         for pos in seqs[embed.id]['glyc_pos']:
-            n_embed = GlycEmb(embed.id, embed.embed[pos], pos, sources, 1)
+            n_embed = GlycEmb(embed.id, embed.embed[pos], pos, n_seqs['label'], sources)
             n_embeds.append(n_embed)
 
     # Write embeddings to file

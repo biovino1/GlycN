@@ -65,7 +65,7 @@ class Embedding:
         with torch.no_grad():
             results = model.encoder(batch_tokens, repr_layers=[layer])
         embed = results["representations"][layer].cpu().numpy()
-        self.embed = embed[0]
+        self.embed = embed[0][1:-1]  # remove beginning and end tokens
 
 
     def write(self, file: str):
@@ -119,11 +119,26 @@ class GlycEmb:
     :param pos: position of asparagine residue in protein sequence
     :param label: glycosylation label (1 = glycosylated, 0 = not glycosylated)
     :param sources: subcellular location or tissue type
-    :param cluster: cluster group
     """
     id: str = ''
     emb: np.ndarray = None
     pos: int = 0
     label: int = 0
     sources: str = ''
-    label: int = 0
+
+
+@dataclass
+class Dataset:
+    """Prepares GlycEmb objects for training and testing.
+
+    :param file: path to file with GlycEmbs
+    :param train: percentage of data to use for training
+    :param test: percentage of data to use for testing
+    """
+    file: str = ''
+    train: float = 0.8
+    test: float = 0.2
+
+    def load_dataset(self):
+        """Loads GlycEmb objects from a npy file.
+        """

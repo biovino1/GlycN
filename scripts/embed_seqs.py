@@ -29,6 +29,8 @@ def load_seqs(file: str) -> list:
     seqs = []
     with open(file, 'r', encoding='utf8') as f:
         for seq in SeqIO.parse(f, 'fasta'):
+            if seq.seq == '':  # Skip seqs not found in UP
+                continue
             seqs.append((seq.id, str(seq.seq)))
 
     return seqs
@@ -44,11 +46,11 @@ def split_embeds(seq: tuple, model: Model, device: str) -> Embedding:
 
     # Split sequence into chunks
     embeds = []
-    chunks = [seq[1][i:i+5000] for i in range(0, len(seq[1]), 5000)]
+    chunks = [seq[1][i:i+3000] for i in range(0, len(seq[1]), 3000)]
 
     # Initialize each split and embed
-    embed = Embedding()
-    for i, chunk in enumerate(chunks):
+    for chunk in chunks:
+        embed = Embedding()
         embed.id, embed.seq = seq[0], chunk
         embed.esm2_embed(model, device, layer=17)
         embeds.append(embed)
@@ -76,7 +78,7 @@ def embed_seqs(seqs: list):
     for i, seq in enumerate(seqs):
 
         # If sequence is too long, split into chunks
-        if len(seq[1]) > 5000:
+        if len(seq[1]) > 3000:
             logging.info('Splitting %s (%s)', seq[0], i)
             embed = split_embeds(seq, model, device)
             embeds.append(embed)
@@ -88,37 +90,8 @@ def embed_seqs(seqs: list):
         embed.esm2_embed(model, device, layer=17)
         embeds.append(embed)
 
-        if i > 5:
-            break
-
-    with open('embeds.npy', 'wb') as dfile:
+    with open('data/embeds.npy', 'wb') as dfile:
         np.save(dfile, embeds)
-
-
-def combine_embeds(direc: str):
-    """Combines split embeddings into one file.
-
-    :param direc: directory containing embeddings
-    """
-
-    # Get list of split embeddings
-    embeds = {}
-    prev_file = ''
-    for file in sorted(os.listdir(direc)):
-        name = file.split('_')[0]
-        if name == prev_file.split('_', maxsplit=1)[0]:
-            embeds[name] = embeds.get(name, set()) | set([prev_file, file])
-            embeds[name] = set(sorted(embeds[name]))  # sorted returns a list
-        prev_file = file
-
-    # Combine embeds for each key in dict
-    for name, files in embeds.items():
-        total_embed = Embedding()
-        for file in files:
-            part_embed = Embedding()
-            part_embed.load(f'{direc}/{file}')
-            total_embed.comb(part_embed)
-        total_embed.write(f'{direc}/{name}.npy')
 
 
 def main():

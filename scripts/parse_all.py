@@ -6,8 +6,31 @@ __date__ = 08/28/2023
 
 import os
 import urllib.request
+import re
 import pandas as pd
 import requests
+
+
+def qual_check(fasta: str, site: set) -> bool:
+    """Returns True if fasta sequence is not empty and site corresponds to a valid
+    glycosylation site. Returns False otherwise.
+
+    :param fasta: fasta sequence
+    :param site: set of glycosites
+    :return bool: True if sequence is valid, False otherwise
+    """
+
+    # Check if fasta sequence is empty
+    if fasta == '':
+        return False
+
+    # Check if glycosites are valid
+    for s in site:
+        sequon = fasta[s-1:s + 2]
+        if not re.match(r'N[^P][ST]', sequon):
+            return False
+
+    return True
 
 
 def get_seqs(sites: dict, sources: dict):
@@ -20,13 +43,15 @@ def get_seqs(sites: dict, sources: dict):
 
     # Request each fasta sequence from UniProt
     for seq, site in sites.items():
+        req = requests.get(f'https://www.uniprot.org/uniprot/{seq}.fasta', timeout=5)
+        fasta = ''.join(req.text.split('\n')[1:])
+        if not qual_check(fasta, site):
+            continue
 
         # Set contains ints, so convert each one to string and join with colons
         site = [str(s) for s in sorted(site)]
         site = ':'.join(sorted(site))  # Converting sets to strings for writing
         source = ';'.join(sources[seq])
-        req = requests.get(f'https://www.uniprot.org/uniprot/{seq}.fasta', timeout=5)
-        fasta = ''.join(req.text.split('\n')[1:])
 
         # Write id, sites, and sequence to file
         with open('data/pos_seqs.txt', 'a', encoding='utf8') as sfile:

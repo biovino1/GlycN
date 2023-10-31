@@ -29,8 +29,6 @@ def load_seqs(file: str) -> list:
     seqs = []
     with open(file, 'r', encoding='utf8') as f:
         for seq in SeqIO.parse(f, 'fasta'):
-            if seq.seq == '':  # Skip seqs not found in UP
-                continue
             seqs.append((seq.id, str(seq.seq)))
 
     return seqs

@@ -48,7 +48,7 @@ def get_embeds(efile: str, seqs: dict):
         n_seqs = seqs[embed.id]
         sources = n_seqs['sources']
         for pos in seqs[embed.id]['glyc_pos']:
-            n_embed = GlycEmb(embed.id, embed.embed[pos], pos, n_seqs['label'], sources)
+            n_embed = GlycEmb(embed.id, embed.embed[pos-1], pos, n_seqs['label'], sources)
             n_embeds.append(n_embed)
 
     # Write embeddings to file

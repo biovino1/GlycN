@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import esm
 import numpy as np
 import torch
+from sklearn.model_selection import train_test_split
 
 
 class Model:
@@ -116,14 +117,14 @@ class GlycEmb:
 
     :param id: sequence ID
     :param emb: embedding vector for asparagine residue
-    :param pos: position of asparagine residue in protein sequence
-    :param label: glycosylation label (1 = glycosylated, 0 = not glycosylated)
+    :param pos: position of asparagine residue in protein sequence (1-indexed)
+    :param label: glycosylation label (pos for glycosylated, neg for non-glycosylated)
     :param sources: subcellular location or tissue type
     """
     id: str = ''
     emb: np.ndarray = None
     pos: int = 0
-    label: int = 0
+    label: str = ''
     sources: str = ''
 
 
@@ -136,9 +137,40 @@ class Dataset:
     :param test: percentage of data to use for testing
     """
     file: str = ''
-    train: float = 0.8
-    test: float = 0.2
+    data: np.ndarray = None
 
-    def load_dataset(self):
-        """Loads GlycEmb objects from a npy file.
+
+    def get_data(self):
+        """Loads GlycEmb objects from a npy file and sets self.data to an equal number of
+        positive and negative examples.
         """
+
+        data = np.load(self.file, allow_pickle=True)
+
+        # Separate positive and negative examples
+        pos = [ex for ex in data if ex.label == 'pos']
+        neg = [ex for ex in data if ex.label == 'neg']
+
+        # Randomly undersample class with more examples
+        if len(pos) > len(neg):
+            pos = np.random.default_rng(1).choice(pos, len(neg), replace=False)
+        else:
+            neg = np.random.default_rng(1).choice(neg, len(pos), replace=False)
+
+        self.data = np.concatenate((pos, neg), axis=0)
+
+
+    def split(self, test: float):
+        """Splits data into training and testing sets.
+        
+        :param test: percentage of data to use for testing
+        """
+
+        embeds = np.array([ex.emb for ex in self.data])
+        labels = np.array([1 if ex.label == 'pos' else 0 for ex in self.data])
+
+        # Split data
+        embeds_train, embeds_test, labels_train, labels_test = train_test_split(
+            embeds, labels, test_size=test, random_state=1)
+
+        return embeds_train, embeds_test, labels_train, labels_test

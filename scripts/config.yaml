@@ -1,0 +1,16 @@
+ConvBlock:
+    in_channels: 64
+    out_channels: 32
+    kernel_size: 3
+    padding: 1
+FeedForwardBlock:
+    in_features: 32
+    hidden_dim: 4
+    out_features: 10
+    dropout: 0.2
+GlycN:
+    lr: 0.002
+    loss: "BinaryCrossEntropy"
+    metrics: "Accuracy"
+    epochs: 10
+    batch_size: 64

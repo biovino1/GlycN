@@ -10,6 +10,7 @@ import esm
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset
 
 
 class Model:
@@ -129,7 +130,7 @@ class GlycEmb:
 
 
 @dataclass
-class Dataset:
+class GlycDataset():
     """Prepares GlycEmb objects for training and testing.
 
     :param file: path to file with GlycEmbs
@@ -173,4 +174,42 @@ class Dataset:
         embeds_train, embeds_test, labels_train, labels_test = train_test_split(
             embeds, labels, test_size=test, random_state=1)
 
+        # Convert to tensors
+        embeds_train = torch.from_numpy(embeds_train).float()
+        embeds_test = torch.from_numpy(embeds_test).float()
+        labels_train = torch.from_numpy(labels_train).float()
+        labels_test = torch.from_numpy(labels_test).float()
+
         return embeds_train, embeds_test, labels_train, labels_test
+
+
+class PytorchDataset(Dataset):
+    """Custom dataset for training and testing.
+    """
+
+    def __init__(self, embeds, labels):
+        """Defines CustomDataset class.
+
+        :param X: array of embeddings
+        :param y: array of labels
+        """
+
+        self.embeds = embeds
+        self.labels = labels
+
+
+    def __len__(self):
+        """Returns length of dataset.
+        """
+
+        return len(self.embeds)
+
+
+    def __getitem__(self, idx):
+        """Returns embed and label at index idx.
+        """
+
+        sample = {'embed': self.embeds[idx],
+            'label': self.labels[idx]}
+
+        return sample

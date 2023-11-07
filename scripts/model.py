@@ -6,8 +6,7 @@ __date__ = "10/31/23"
 """
 
 
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn
 
 
 class ConvBlock(nn.Module):
@@ -15,18 +14,20 @@ class ConvBlock(nn.Module):
     input to feed forward block.
     """
 
-    def __init__(self, in_channels, out_channels, kernel_size, padding):
+    def __init__(self, in_channels, out_channels, kernel_size, pool_kernel):
         super().__init__()
-        self.conv1d = nn.Conv1d(in_channels, out_channels, kernel_size, padding)
+        self.conv1d = nn.Conv1d(in_channels, out_channels, kernel_size, padding=1)
         self.bn = nn.BatchNorm1d(out_channels)
         self.relu = nn.ReLU()
-        self.flatten = nn.Flatten()
+        self.pool = nn.MaxPool1d(pool_kernel)
 
 
     def forward(self, x):
         x = self.conv1d(x)
         x = self.bn(x)
         x = self.relu(x)
+        x = self.pool(x)
+        x = x.view(-1, 16 * 1280)
         return x
 
 
@@ -46,6 +47,8 @@ class FeedForwardBlock(nn.Module):
     def forward(self, x):
         x = self.linear1(x)
         x = self.linear2(x)
+        x = self.relu(x)
+        x = self.dropout(x)
         x = self.sigmoid(x)
         return x
 
@@ -65,32 +68,3 @@ class GlycN(nn.Module):
         x = self.conv_block(x)
         x = self.ff_block(x)
         return x
-
-
-    def train_model(self, X_train, X_test, y_train, y_test):
-        """Trains model based on model_params defined in config.ini.
-
-        :param X_train: array of 1xn embeddings for testing
-        :param X_test: array of 1xn embeddings for testing
-        :param y_train: array of labels for training
-        :param y_test: array of labels for testing
-        """
-
-        loss_fxn = self.model_params['loss']
-        optimizer = optim.Adam(self.parameters(), lr=self.model_params['lr'])
-
-        # Training loop
-        for epoch in range(self.model_params['epochs']):
-            self.train()
-            optimizer.zero_grad()
-            y_pred = self(X_train)
-            loss = loss_fxn(y_pred, y_train)
-            loss.backward()
-            optimizer.step()
-
-            # Print loss
-            if epoch % 10 == 0:
-                print(f'Epoch: {epoch} | Loss: {loss.item()}')
-
-        # Evaluate model
-        self.eval()

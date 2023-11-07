@@ -170,6 +170,9 @@ class GlycDataset():
         embeds = np.array([ex.emb for ex in self.data])
         labels = np.array([1 if ex.label == 'pos' else 0 for ex in self.data])
 
+        # Reshape embeds so they are 1xn
+        embeds = np.array([np.reshape(embed, (1, embed.shape[0])) for embed in embeds])
+
         # Split data
         embeds_train, embeds_test, labels_train, labels_test = train_test_split(
             embeds, labels, test_size=test, random_state=1)
@@ -177,14 +180,14 @@ class GlycDataset():
         # Convert to tensors
         embeds_train = torch.from_numpy(embeds_train).float()
         embeds_test = torch.from_numpy(embeds_test).float()
-        labels_train = torch.from_numpy(labels_train).float()
-        labels_test = torch.from_numpy(labels_test).float()
+        labels_train = torch.from_numpy(labels_train).long()
+        labels_test = torch.from_numpy(labels_test).long()
 
         return embeds_train, embeds_test, labels_train, labels_test
 
 
 class PytorchDataset(Dataset):
-    """Custom dataset for training and testing.
+    """Custom dataset for training and testing Pytorch models.
     """
 
     def __init__(self, embeds, labels):

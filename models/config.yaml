@@ -10,7 +10,5 @@ FeedForwardBlock:
     dropout: 0.2
 GlycN:
     lr: 0.002
-    loss: "BinaryCrossEntropy"
-    metrics: "Accuracy"
     epochs: 10
     batch_size: 128

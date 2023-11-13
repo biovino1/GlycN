@@ -5,7 +5,6 @@ __author__ = "Ben Iovino"
 __date__ = "10/31/23"
 """
 
-
 from torch import nn
 
 
@@ -20,6 +19,7 @@ class ConvBlock(nn.Module):
         self.bn = nn.BatchNorm1d(out_channels)
         self.relu = nn.ReLU()
         self.pool = nn.MaxPool1d(pool_kernel)
+        self.flatten = nn.Flatten()
 
 
     def forward(self, x):
@@ -27,7 +27,7 @@ class ConvBlock(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         x = self.pool(x)
-        x = x.view(-1, 16 * 1280)
+        x = self.flatten(x)
         return x
 
 
@@ -46,6 +46,7 @@ class FeedForwardBlock(nn.Module):
 
     def forward(self, x):
         x = self.linear1(x)
+        x = self.relu(x)
         x = self.linear2(x)
         x = self.relu(x)
         x = self.dropout(x)

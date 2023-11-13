@@ -10,7 +10,7 @@ from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
 from embed import GlycDataset, PytorchDataset
-from model import GlycN
+from models.model import GlycN
 import yaml
 
 
@@ -50,35 +50,47 @@ def main():
     # Send model and data to GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    for batch in train_loader:
-        batch['embed'] = batch['embed'].to(device)
-        batch['label'] = batch['label'].to(device)
 
     # Loss function and optimizer
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=config['GlycN']['lr'])
 
     # Training loop
+    model.train()
     for epoch in range(config['GlycN']['epochs']):
         print(f'Epoch: {epoch}')
-        model.train()
+
+        # Keep track of accuracy each epoch
+        correct = 0
+        total = 0
         for batch in train_loader:
-            data = batch['embed']
-            labels = batch['label']
+            data = batch['embed'].to(device)
+            labels = batch['label'].to(device)
 
             # Zero the gradients
             optimizer.zero_grad()
 
-            # Forward pass and loss calculation
+            # Get outputs and convert sigmoid output to binary prediction
             outputs = model(data)
-            loss = criterion(outputs, labels)
+
+            # Round outputs to 0 or 1 and choose max value, convert to float
+            outputs = torch.round(outputs)
+            outputs = torch.max(outputs, dim=1)[0].float()
+
+            # Calculate loss
+            loss = criterion(outputs, labels.float())
+
+            # Calculate accuracy
+            total += labels.size(0)
+            correct += (outputs == labels).sum().item()
 
             # Backpropagation and optimization
             loss.backward()
             optimizer.step()
 
         # Print or log the training loss for this epoch if needed
-        print(f'Epoch [{epoch + 1}/{10}], Loss: {loss.item()}')
+        print(f'Epoch [{epoch + 1}/{config["GlycN"]["epochs"]}], Loss: {loss.item()}')
+        print(f'Accuracy: {100 * correct / total}%')
 
 
 if __name__ == '__main__':

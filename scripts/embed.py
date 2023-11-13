@@ -9,7 +9,6 @@ from dataclasses import dataclass
 import esm
 import numpy as np
 import torch
-from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 
 
@@ -127,63 +126,6 @@ class GlycEmb:
     pos: int = 0
     label: str = ''
     sources: str = ''
-
-
-@dataclass
-class GlycDataset():
-    """Prepares GlycEmb objects for training and testing.
-
-    :param file: path to file with GlycEmbs
-    :param train: percentage of data to use for training
-    :param test: percentage of data to use for testing
-    """
-    file: str = ''
-    data: np.ndarray = None
-
-
-    def get_data(self):
-        """Loads GlycEmb objects from a npy file and sets self.data to an equal number of
-        positive and negative examples.
-        """
-
-        data = np.load(self.file, allow_pickle=True)
-
-        # Separate positive and negative examples
-        pos = [ex for ex in data if ex.label == 'pos']
-        neg = [ex for ex in data if ex.label == 'neg']
-
-        # Randomly undersample class with more examples
-        if len(pos) > len(neg):
-            pos = np.random.default_rng(1).choice(pos, len(neg), replace=False)
-        else:
-            neg = np.random.default_rng(1).choice(neg, len(pos), replace=False)
-
-        self.data = np.concatenate((pos, neg), axis=0)
-
-
-    def split(self, test: float):
-        """Splits data into training and testing sets.
-        
-        :param test: percentage of data to use for testing
-        """
-
-        embeds = np.array([ex.emb for ex in self.data])
-        labels = np.array([1 if ex.label == 'pos' else 0 for ex in self.data])
-
-        # Reshape embeds so they are 1xn
-        embeds = np.array([np.reshape(embed, (1, embed.shape[0])) for embed in embeds])
-
-        # Split data
-        embeds_train, embeds_test, labels_train, labels_test = train_test_split(
-            embeds, labels, test_size=test, random_state=1)
-
-        # Convert to tensors
-        embeds_train = torch.from_numpy(embeds_train).float()
-        embeds_test = torch.from_numpy(embeds_test).float()
-        labels_train = torch.from_numpy(labels_train).long()
-        labels_test = torch.from_numpy(labels_test).long()
-
-        return embeds_train, embeds_test, labels_train, labels_test
 
 
 class PytorchDataset(Dataset):

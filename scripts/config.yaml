@@ -1,0 +1,14 @@
+ConvBlock:
+    in_channels: 1
+    out_channels: 128
+    kernel_size: 5
+    pool_kernel: 2
+FeedForwardBlock:
+    in_features: 163712
+    hidden_dim: 128
+    out_features: 1
+    dropout: 0.2
+GlycN:
+    lr: 0.001
+    epochs: 100
+    batch_size: 128

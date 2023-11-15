@@ -23,6 +23,7 @@ class ConvBlock(nn.Module):
 
 
     def forward(self, x):
+        x = x.unsqueeze(1)
         x = self.conv1d(x)
         x = self.bn(x)
         x = self.relu(x)
@@ -48,7 +49,6 @@ class FeedForwardBlock(nn.Module):
         x = self.linear1(x)
         x = self.relu(x)
         x = self.linear2(x)
-        x = self.relu(x)
         x = self.dropout(x)
         x = self.sigmoid(x)
         return x

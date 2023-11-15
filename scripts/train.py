@@ -9,23 +9,21 @@ import torch
 from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
-from embed import GlycDataset, PytorchDataset
-from models.model import GlycN
 import yaml
+from model import GlycN
+from embed import PytorchDataset
 
 
-def get_train_loader(embeds_path: str, config: dict):
+def get_train_loader(config: dict) -> DataLoader:
     """Returns pytorch DataLoader for training data.
 
-    :param embeds_path: path to N_embeds.npy
     :param config: dict with model parameters
     :return: pytorch DataLoader
     """
 
-    # Load data
-    dataset = GlycDataset(embeds_path)
-    dataset.get_data()
-    embeds_train, _, labels_train, _ = dataset.split(0.2)
+    # Load training data
+    embeds_train = torch.load('data/datasets/embeds_train.pt')
+    labels_train = torch.load('data/datasets/labels_train.pt')
 
     # Define pytorch dataset
     batch_size = config['GlycN']['batch_size']
@@ -45,7 +43,7 @@ def main():
 
     # Train model
     model = GlycN(config)
-    train_loader = get_train_loader('data/N_embeds.npy', config)
+    train_loader = get_train_loader(config)
 
     # Send model and data to GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -65,32 +63,27 @@ def main():
         total = 0
         for batch in train_loader:
             data = batch['embed'].to(device)
-            labels = batch['label'].to(device)
-
-            # Zero the gradients
-            optimizer.zero_grad()
+            labels = batch['label'].to(device).float()
 
             # Get outputs and convert sigmoid output to binary prediction
             outputs = model(data)
-
-            # Round outputs to 0 or 1 and choose max value, convert to float
-            outputs = torch.round(outputs)
-            outputs = torch.max(outputs, dim=1)[0].float()
+            outputs = torch.round(outputs).flatten()
 
             # Calculate loss
-            loss = criterion(outputs, labels.float())
+            loss = criterion(outputs, labels)
 
             # Calculate accuracy
             total += labels.size(0)
             correct += (outputs == labels).sum().item()
 
             # Backpropagation and optimization
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
         # Print or log the training loss for this epoch if needed
         print(f'Epoch [{epoch + 1}/{config["GlycN"]["epochs"]}], Loss: {loss.item()}')
-        print(f'Accuracy: {100 * correct / total}%')
+        print(f'Accuracy: {round((100 * correct / total), 2)}%')
 
 
 if __name__ == '__main__':

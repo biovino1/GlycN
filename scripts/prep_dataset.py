@@ -45,15 +45,13 @@ def split(data: np.ndarray, test: float) -> tuple:
     embeds = np.array([ex.emb for ex in data])
     labels = np.array([1 if ex.label == 'pos' else 0 for ex in data])
 
-    # Reshape embeds so they are 1xn
-    embeds = np.array([np.reshape(embed, (1, embed.shape[0])) for embed in embeds])
-
     # Split data
     embeds_train, embeds_test, labels_train, labels_test = train_test_split(
         embeds, labels, test_size=test, random_state=1)
 
     # Convert to tensors and write to file
-    os.mkdir('data/datasets')
+    if not os.path.exists('data/datasets'):
+        os.mkdir('data/datasets')
     torch.save(torch.from_numpy(embeds_train).float(), 'data/datasets/embeds_train.pt')
     torch.save(torch.from_numpy(embeds_test).float(), 'data/datasets/embeds_test.pt')
     torch.save(torch.from_numpy(labels_train).long(), 'data/datasets/labels_train.pt')

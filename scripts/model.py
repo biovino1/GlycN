@@ -1,5 +1,6 @@
 """Defines 1D-CNN model for predicting glyscosylation.
 
+Inputs: 1D tensors of length 2560 (ESM-2 t36)
 
 __author__ = "Ben Iovino"
 __date__ = "10/31/23"

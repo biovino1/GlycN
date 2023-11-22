@@ -4,6 +4,7 @@ __author__ = "Ben Iovino"
 __date__ = "09/1/23"
 """
 
+import argparse
 import numpy as np
 from Bio import SeqIO
 from embed import GlycEmb
@@ -30,10 +31,11 @@ def get_sites(sfile: str) -> dict:
     return seqs
 
 
-def get_embeds(efile: str, seqs: dict):
+def get_embeds(efile: str, nfile: str, seqs: dict):
     """Writes embeddings for each asparagine residue in each sequence to one file.
     
-    :param edirec: file containing embeddings
+    :param efile: file containing embeddings
+    :param nfile: file containing individual asparagine embeddings
     :param seqs: dictionary of asparagine positions, glycosylation labels, and tissue sources
     """
 
@@ -52,16 +54,23 @@ def get_embeds(efile: str, seqs: dict):
             n_embeds.append(n_embed)
 
     # Write embeddings to file
-    with open('data/N_embeds.npy', 'wb') as efile:  #pylint: disable=W1514
-        np.save(efile, n_embeds)
+    with open(nfile, 'wb') as file:  #pylint: disable=W1514
+        np.save(file, n_embeds)
 
 
 def main():
     """Main
     """
 
-    seqs = get_sites('data/all_seqs.txt')
-    get_embeds('data/embeds.npy', seqs)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', type=str, default='data/all_seqs.txt', help='fasta file')
+    parser.add_argument('-e', type=str, default='data/embeds.npy', help='embeddings file')
+    parser.add_argument('-n', type=str, default='data/N_embeds.npy', help='N embeddings file')
+    args = parser.parse_args()
+
+    # Parse fasta file for sites and save individual Asp embeddings
+    seqs = get_sites(args.f)
+    get_embeds(args.e, args.n, seqs)
 
 
 if __name__ == '__main__':

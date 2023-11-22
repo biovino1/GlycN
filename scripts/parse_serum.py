@@ -6,7 +6,6 @@ __date__ = 11/17/2023
 
 import pandas as pd
 import requests
-from Bio import SeqIO
 
 
 def parse_file(file: str) -> dict:
@@ -23,6 +22,8 @@ def parse_file(file: str) -> dict:
     # Get unique protein ID's and all glycosylated positions
     prots = {}
     for i, prot in enumerate(serum_pdf['Master Protein Accessions']):
+        if prot in ['A0A087WTA8', 'A0A087X1N7']:  # These proteins don't have fa seq
+            continue
 
         # Get site and modification/abundance
         site = serum_pdf['Annotated Sequence'][i]
@@ -37,37 +38,31 @@ def parse_file(file: str) -> dict:
     return prots
 
 
-def get_seqs(prots: dict):
-    """Writes each accession ID and corresponding sequence to file.
+def get_seqs(prots: dict) -> dict:
+    """Returns a dictionary of fasta sequences.
 
     :param prots: dict of accession ID's and glycosites
+    :return dict: dictionary where key is accession ID and value is fasta sequence
     """
 
     # Request each fasta sequence from UniProt
+    seqs = {}
     for seq in prots.keys():
         req = requests.get(f'https://www.uniprot.org/uniprot/{seq}.fasta', timeout=5)
         fasta = ''.join(req.text.split('\n')[1:])
-        if fasta == '':
-            continue
+        seqs[seq] = fasta
 
-        # Write id, sites, and sequence to file
-        with open('data/serum_seqs.fa', 'a', encoding='utf8') as sfile:
-            sfile.write(f'>{seq}\n')
-            sfile.write(f'{fasta}\n')
+    return seqs
 
 
-def site_pos(prots: dict) -> dict:
+def site_pos(prots: dict, seqs: dict) -> dict:
     """Returns a dictionary with substrings of sequence replaced with the position of the
     glycosylated amino acid.
 
     :param prots: dict of accession ID's and glycosites
+    :param seqs: dict of accession ID's and fasta sequences
     :return dict: updated dictionary
     """
-
-    # Parse all seqs in serum.fa
-    seqs = {}
-    for record in SeqIO.parse('data/serum_seqs.fa', 'fasta'):
-        seqs[record.id] = str(record.seq)
 
     # For each protein, replace each substring with the N's position in whole sequence
     for prot, substr in prots.items():
@@ -91,15 +86,32 @@ def site_pos(prots: dict) -> dict:
     return prots
 
 
+def write_seqs(prots: dict, seqs: dict):
+    """Writes sequences in a dictionary to one fasta file.
+
+    :param prots: dict where key is accession ID and glycosites
+    :param seqs: dict where key is accession ID and fasta sequence
+    """
+
+    # Write each sequence to file
+    with open('data/test', 'w', encoding='utf8') as file:
+        for prot, seq in seqs.items():
+
+            # Get list of glycosites to write on fasta header line
+            sites = list(prots[prot].keys())
+            sites = ':'.join([str(s) for s in sites])
+            file.write(f'>{prot}\t{sites}\n{seq}\n')
+
+
 def main():
     """Main function
     """
 
     file = 'data/Quantified_serum_glycopeptides_20230831.xlsx'
     prots = parse_file(file)
-    get_seqs(prots)
-    prots = site_pos(prots)
-    print(prots['H0Y512'])
+    seqs = get_seqs(prots)
+    prots = site_pos(prots, seqs)
+    write_seqs(prots, seqs)
 
 
 if __name__ == '__main__':

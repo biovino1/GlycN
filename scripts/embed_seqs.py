@@ -4,6 +4,7 @@ __author__ = "Ben Iovino"
 __date__ = "08/28/23"
 """
 
+import argparse
 import logging
 import os
 import torch
@@ -61,10 +62,11 @@ def split_embeds(seq: tuple, model: Model, device: str) -> Embedding:
     return total_embed
 
 
-def embed_seqs(seqs: list):
+def embed_seqs(seqs: list, efile: str):
     """Embeds a list of sequences and writes them to a file.
 
     :param seqs: list of sequences
+    :param efile: path to embeddings file to save
     """
 
     model = Model()  # ESM2 encoder and tokenizer
@@ -88,17 +90,22 @@ def embed_seqs(seqs: list):
         embed.esm2_embed(model, device, layer=17)
         embeds.append(embed)
 
-    with open('data/embeds.npy', 'wb') as dfile:
-        np.save(dfile, embeds)
+    with open(efile, 'wb') as file:
+        np.save(file, embeds)
 
 
 def main():
     """Main
     """
 
-    file = 'data/all_seqs.txt'
-    seqs = load_seqs(file)
-    embed_seqs(seqs)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', type=str, default='data/all_seqs.fa', help='fasta file')
+    parser.add_argument('-e', type=str, defualt='data/embeds.npy', help='embeddings file')
+    args = parser.parse_args()
+
+    # Load sequences from file and embed
+    seqs = load_seqs(args.f)
+    embed_seqs(seqs, args.e)
 
 
 if __name__ == '__main__':

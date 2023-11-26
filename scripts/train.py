@@ -5,6 +5,7 @@ __author__ = "Ben Iovino"
 __date__ = "10/31/23"
 """
 
+import os
 import torch
 from torch import nn
 from torch import optim
@@ -12,6 +13,9 @@ from torch.utils.data import DataLoader
 import yaml
 from model import GlycN
 from embed import PytorchDataset
+
+torch.cuda.set_per_process_memory_fraction(0.8)
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
 
 def get_train_loader(config: dict) -> DataLoader:
@@ -37,49 +41,49 @@ def main():
     """Main function
     """
 
-    # Define model parameters
+    # Load model with config file parameters
     with open('scripts/config.yaml', 'r', encoding='utf8') as cfile:
         config = yaml.safe_load(cfile)
-
-    # Train model
     model = GlycN(config)
-    train_loader = get_train_loader(config)
 
-    # Send model and data to GPU if available
+    # Move model to GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
+
+    # Get training and validation data
+    train_loader = get_train_loader(config)
+    embeds_val = torch.load('data/datasets/embeds_val.pt').to(device)
+    labels_val = torch.load('data/datasets/labels_val.pt').to(device).float()
 
     # Loss function and optimizer
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=config['GlycN']['lr'])
 
     # Training loop
-    model.train()
     for epoch in range(config['GlycN']['epochs']):
-        print(f'Epoch: {epoch}')
-
-        # Keep track of accuracy each epoch
-        correct = 0
-        total = 0
+        model.train()
+        correct, total = 0, 0  # keep track of accuracy and print at end of epoch
         for batch in train_loader:
             data = batch['embed'].to(device)
             labels = batch['label'].to(device).float()
 
-            # Get outputs and convert sigmoid output to binary prediction
-            outputs = model(data)
-            outputs = torch.round(outputs).flatten()
-
-            # Calculate loss
+            # Get outputs and calculate loss
+            outputs = model(data).flatten()
             loss = criterion(outputs, labels)
-
-            # Calculate accuracy
-            total += labels.size(0)
-            correct += (outputs == labels).sum().item()
 
             # Backpropagation and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+        # Evaluate model on validation set
+        model.eval()
+        with torch.no_grad():
+            outputs = model(embeds_val).flatten()
+            outputs = torch.round(outputs)
+            total += labels_val.size(0)
+            correct += (outputs == labels_val).sum().item()
+        torch.cuda.empty_cache()
 
         # Print or log the training loss for this epoch if needed
         print(f'Epoch [{epoch + 1}/{config["GlycN"]["epochs"]}], Loss: {loss.item()}')

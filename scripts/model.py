@@ -7,6 +7,7 @@ __date__ = "10/31/23"
 """
 
 from torch import nn
+import torch.nn.functional as F
 
 
 class ConvBlock(nn.Module):
@@ -14,21 +15,17 @@ class ConvBlock(nn.Module):
     input to feed forward block.
     """
 
-    def __init__(self, in_channels, out_channels, kernel_size, pool_kernel):
+    def __init__(self, in_channels, out_channels, kernel_size):
         super().__init__()
         self.conv1d = nn.Conv1d(in_channels, out_channels, kernel_size, padding=1)
         self.bn = nn.BatchNorm1d(out_channels)
-        self.relu = nn.ReLU()
-        self.pool = nn.MaxPool1d(pool_kernel)
         self.flatten = nn.Flatten()
 
 
     def forward(self, x):
-        x = x.unsqueeze(1)
-        x = self.conv1d(x)
+        x = x.unsqueeze(1)  # Add channel dimension
+        x = F.relu(self.conv1d(x))
         x = self.bn(x)
-        x = self.relu(x)
-        x = self.pool(x)
         x = self.flatten(x)
         return x
 
@@ -41,14 +38,12 @@ class FeedForwardBlock(nn.Module):
         super().__init__()
         self.linear1 = nn.Linear(in_features, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, out_features)
-        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
         self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, x):
-        x = self.linear1(x)
-        x = self.relu(x)
+        x = F.relu(self.linear1(x))
         x = self.linear2(x)
         x = self.dropout(x)
         x = self.sigmoid(x)

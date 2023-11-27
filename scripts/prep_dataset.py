@@ -53,9 +53,9 @@ def split(data: np.ndarray, test: float) -> tuple:
     if not os.path.exists('data/datasets'):
         os.mkdir('data/datasets')
     torch.save(torch.from_numpy(embeds_train).float(), 'data/datasets/embeds_train.pt')
-    torch.save(torch.from_numpy(embeds_val).float(), 'data/datasets/embeds_val.pt')
+    torch.save(torch.from_numpy(embeds_val).float(), 'data/datasets/embeds_test.pt')
     torch.save(torch.from_numpy(labels_train).long(), 'data/datasets/labels_train.pt')
-    torch.save(torch.from_numpy(labels_val).long(), 'data/datasets/labels_val.pt')
+    torch.save(torch.from_numpy(labels_val).long(), 'data/datasets/labels_test.pt')
 
 
 def main():

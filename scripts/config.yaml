@@ -11,3 +11,6 @@ GlycN:
     lr: 0.001
     epochs: 100
     batch_size: 64
+    min_delta: 0.0005
+    patience: 8
+    k_folds: 5

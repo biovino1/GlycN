@@ -1,13 +1,13 @@
 ConvBlock:
     in_channels: 1
-    out_channels: 64
-    kernel_size: 3
+    out_channels: 128
+    kernel_size: 5
 FeedForwardBlock:
-    in_features: 163840
+    in_features: 327424
     hidden_dim: 64
     out_features: 1
     dropout: 0.2
 GlycN:
-    lr: 0.001
+    lr: 0.00001
     epochs: 100
     batch_size: 64

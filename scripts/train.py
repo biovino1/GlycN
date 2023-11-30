@@ -105,6 +105,9 @@ def main():
     acc, loss = get_acc_loss(model, embeds_test, labels_test, criterion)
     print(f'Accuracy: {round((100 * acc), 2)}%')
 
+    # Save model
+    torch.save(model.state_dict(), 'data/models/model.pt')
+
 
 if __name__ == '__main__':
     main()

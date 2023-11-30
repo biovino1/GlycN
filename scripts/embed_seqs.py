@@ -5,6 +5,7 @@ __date__ = "08/28/23"
 """
 
 import argparse
+import datetime
 import logging
 import os
 import torch
@@ -35,33 +36,6 @@ def load_seqs(file: str) -> list:
     return seqs
 
 
-def split_embeds(seq: tuple, model: Model, device: str) -> Embedding:
-    """Returns embedding of a protein sequence > 5000 residues.
-
-    :param seq: tuple of ID and sequence
-    :param model: Model class with encoder and tokenizer
-    :param device: gpu/cpu
-    """
-
-    # Split sequence into chunks
-    embeds = []
-    chunks = [seq[1][i:i+3000] for i in range(0, len(seq[1]), 3000)]
-
-    # Initialize each split and embed
-    for chunk in chunks:
-        embed = Embedding()
-        embed.id, embed.seq = seq[0], chunk
-        embed.esm2_embed(model, device, layer=17)
-        embeds.append(embed)
-
-    # Combine embeddings
-    total_embed = Embedding()
-    for embed in embeds:
-        total_embed.comb(embed)
-
-    return total_embed
-
-
 def embed_seqs(seqs: list, efile: str):
     """Embeds a list of sequences and writes them to a file.
 
@@ -77,15 +51,19 @@ def embed_seqs(seqs: list, efile: str):
     embeds = []
     for i, seq in enumerate(seqs):
 
-        # If sequence is too long, split into chunks
+        # If device is on CPU, move to GPU
+        if device == torch.device('cpu'):
+            device = torch.device('cuda')
+            model.to_device(device)
+
+        # If sequence is too long, move device to CPU
         if len(seq[1]) > 3000:
-            logging.info('Splitting %s (%s)', seq[0], i)
-            embed = split_embeds(seq, model, device)
-            embeds.append(embed)
-            continue
+            device = torch.device('cpu')
+            model.to_device(device)
+            logging.info('Sequence %s too long, moving to CPU', seq[0])
 
         # Initialize object and embed
-        logging.info('Embedding %s (%s)', seq[0], i)
+        logging.info('%s: Embedding %s (%s)', datetime.datetime.now(),seq[0], i)
         embed = Embedding(seq[0], seq[1])
         embed.esm2_embed(model, device, layer=17)
         embeds.append(embed)
@@ -100,7 +78,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', type=str, default='data/all_seqs.fa', help='fasta file')
-    parser.add_argument('-e', type=str, defualt='data/embeds.npy', help='embeddings file')
+    parser.add_argument('-e', type=str, default='data/embeds.npy', help='embeddings file')
     args = parser.parse_args()
 
     # Load sequences from file and embed

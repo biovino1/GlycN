@@ -47,6 +47,8 @@ def get_seqs(sites: dict, sources: dict):
         fasta = ''.join(req.text.split('\n')[1:])
         if not qual_check(fasta, site):
             continue
+        if len(fasta) > 10000:  # Cannot embed sequences this long
+            continue
 
         # Set contains ints, so convert each one to string and join with colons
         site = [str(s) for s in sorted(site)]

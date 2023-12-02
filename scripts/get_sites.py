@@ -63,7 +63,7 @@ def main():
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', type=str, default='data/all_seqs.txt', help='fasta file')
+    parser.add_argument('-f', type=str, default='data/all_seqs.fa', help='fasta file')
     parser.add_argument('-e', type=str, default='data/embeds.npy', help='embeddings file')
     parser.add_argument('-n', type=str, default='data/N_embeds.npy', help='N embeddings file')
     args = parser.parse_args()

@@ -43,7 +43,7 @@ def embed_seqs(seqs: list, efile: str):
     :param efile: path to embeddings file to save
     """
 
-    model = Model()  # ESM2 encoder and tokenizer
+    model = Model('esm2')  # pLM encoder and tokenizer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # pylint: disable=E1101
     model.to_device(device)
 
@@ -53,7 +53,7 @@ def embed_seqs(seqs: list, efile: str):
 
         # If device is on CPU, move to GPU
         if device == torch.device('cpu'):
-            device = torch.device('cuda')
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             model.to_device(device)
 
         # If sequence is too long, move device to CPU

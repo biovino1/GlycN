@@ -8,7 +8,9 @@ __date__ = "08/28/23"
 from dataclasses import dataclass
 import esm
 import numpy as np
+import regex as re
 import torch
+from transformers import T5EncoderModel, T5Tokenizer
 from torch.utils.data import Dataset
 
 
@@ -16,13 +18,32 @@ class Model:
     """Stores model and tokenizer for embedding proteins.
     """
 
-    def __init__(self):
-        """Defines Model class.
+    def __init__(self, model: str):
+        """Model contains encoder and tokenizer.
         """
 
-        self.encoder, self.alphabet = esm.pretrained.esm2_t36_3B_UR50D()
-        self.tokenizer = self.alphabet.get_batch_converter()
-        self.encoder.eval()  # disables dropout for deterministic results
+        if model == 'esm2':
+            self.load_esm2()
+        elif model == 'prott5':
+            self.load_prott5xl()
+
+
+    def load_esm2(self):
+        """Loads ESM-2 model.
+        """
+
+        self.encoder, alphabet = esm.pretrained.esm2_t36_3B_UR50D()
+        self.tokenizer = alphabet.get_batch_converter()
+        self.encoder.eval()
+
+
+    def load_prott5xl(self):
+        """Loads ProtT5-XL model.
+        """
+
+        self.tokenizer = T5Tokenizer.from_pretrained('Rostlab/prot_t5_xl_uniref50',
+                                                    do_lower_case=False)
+        self.encoder = T5EncoderModel.from_pretrained("Rostlab/prot_t5_xl_uniref50")
 
 
     def to_device(self, device: str):
@@ -54,7 +75,6 @@ class Embedding:
         :param seq: protein ID and sequence
         :param model: Model class with encoder and tokenizer
         :param device: gpu/cpu
-        return: list of vectors
         """
 
         # Embed sequences
@@ -67,6 +87,34 @@ class Embedding:
             results = model.encoder(batch_tokens, repr_layers=[layer])
         embed = results["representations"][layer].cpu().numpy()
         self.embed = embed[0][1:-1]  # remove beginning and end tokens
+
+
+    def prott5xl_embed(self, model: Model, device: str):
+        """Returns embedding of a protein sequence. Each vector represents a single amino
+        acid using Rostlab's ProtT5-XL model.
+        """
+
+        # Remove special chars, add space after each amino acid so each residue is vectorized
+        seq = re.sub(r"[UZOB]", "X", self.seq)
+        seq = [' '.join([*seq])]
+
+        # Tokenize, encode, and load sequence
+        ids = model.tokenizer.batch_encode_plus(seq, add_special_tokens=True, padding=True)
+        input_ids = torch.tensor(ids['input_ids']).to(device)  # pylint: disable=E1101
+        attention_mask = torch.tensor(ids['attention_mask']).to(device)  # pylint: disable=E1101
+
+        # Extract sequence features
+        with torch.no_grad():
+            embedding = model.encoder(input_ids=input_ids,attention_mask=attention_mask)
+        embedding = embedding.last_hidden_state.cpu().numpy()
+
+        # Remove padding and special tokens
+        features = []
+        for seq_num in range(len(embedding)):  # pylint: disable=C0200
+            seq_len = (attention_mask[seq_num] == 1).sum()
+            seq_emd = embedding[seq_num][:seq_len-1]
+            features.append(seq_emd)
+        self.embed = features[0]
 
 
     def write(self, file: str):
@@ -92,23 +140,6 @@ class Embedding:
         self.id = embed[0]
         self.seq = embed[1]
         self.embed = embed[2]
-
-
-    def comb(self, emb):
-        """Combines two embeddings.
-        
-        :param emb: Embedding class
-        """
-
-        # If self is empty, copy emb
-        if self.id == '':
-            self.id = emb.id
-            self.seq = emb.seq
-            self.embed = emb.embed
-            return
-
-        self.seq += emb.seq
-        self.embed = np.concatenate(([self.embed, emb.embed]), axis=0)
 
 
 @dataclass

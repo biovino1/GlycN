@@ -23,6 +23,8 @@ def parse_file(file: str) -> dict:
     # Get peptides for each protein and their respective fucose conc
     prots = {}
     for i, prot in enumerate(serum_pdf['Master Protein Accessions']):
+        if prot == 'Q8WZ42':  # this protein is too big to embed
+            continue
         site = serum_pdf['Annotated Sequence'][i]  # peptide with glycosylated site
         fucose = serum_pdf['per fuc no mannose'][i]
         prots[prot] = prots.get(prot, {})
@@ -41,7 +43,6 @@ def get_seqs(prots: dict) -> dict:
     # Request each fasta sequence from UniProt
     seqs = {}
     for seq in prots.keys():
-        print(seq)
         req = requests.get(f'https://www.uniprot.org/uniprot/{seq}.fasta', timeout=5)
         fasta = ''.join(req.text.split('\n')[1:])
         seqs[seq] = fasta

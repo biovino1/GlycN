@@ -85,8 +85,9 @@ def write_seqs(prots: dict, seqs: dict):
         for prot, seq in seqs.items():
 
             # Get list of glycosites to write on fasta header line
-            pos = ':'.join(set([str(prots[prot][pep][1]) for pep in prots[prot].keys()]))
-            file.write(f'>{prot}\t{pos}\n{seq}\n')
+            pos = ':'.join([str(prots[prot][pep][1]) for pep in prots[prot].keys()])
+            concs = ':'.join([str(prots[prot][pep][0]) for pep in prots[prot].keys()])
+            file.write(f'>{prot}\t{pos}\t{concs}\n{seq}\n')
 
 
 def main():

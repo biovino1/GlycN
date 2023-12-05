@@ -1,4 +1,4 @@
-"""Embeds sequences using ESM2 model.
+"""Embeds protein sequences using protein language models
 
 __author__ = "Ben Iovino"
 __date__ = "08/28/23"

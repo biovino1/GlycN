@@ -1,4 +1,4 @@
-"""Trains model defined on model.py using data from N_embeds.npy
+"""Performs k-fold cross validation on GlycN model.
 
 
 __author__ = "Ben Iovino"

@@ -65,7 +65,7 @@ def embed_seqs(seqs: list, efile: str):
         # Initialize object and embed
         logging.info('%s: Embedding %s (%s)', datetime.datetime.now(),seq[0], i)
         embed = Embedding(seq[0], seq[1])
-        embed.esm2_embed(model, device, layer=36)
+        embed.esm2_embed(model, device, layer=17)
         embeds.append(embed)
 
     with open(efile, 'wb') as file:

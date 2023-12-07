@@ -12,7 +12,7 @@ import yaml
 
 log_filename = 'data/logs/grid_search.log'  #pylint: disable=C0103
 os.makedirs(os.path.dirname(log_filename), exist_ok=True)
-logging.basicConfig(filename=log_filename, filemode='w',
+logging.basicConfig(filename=log_filename, filemode='a',
                      level=logging.INFO, format='%(message)s')
 
 
@@ -25,7 +25,7 @@ def define_grid() -> dict:
     grid = {
         'out_channels': [8, 16, 32, 64, 128],
         'kernel_size': [1, 2, 3, 4, 5],
-        'hidden_dims': [8, 16, 32, 64, 128],
+        'hidden_dim': [8, 16, 32, 64, 128],
         'lr': [0.1, 0.01, 0.001, 0.0001, 0.00001],
         'epochs': [10, 20, 30, 40, 50],
         'batch_size': [8, 16, 32, 64, 128]
@@ -50,7 +50,7 @@ def write_config(grid: dict):
     # Separate next 4 hyperparameters into FeedForwardBlock
     feedforward_block = {
         'in_features': grid['out_channels'] * 2558,
-        'hidden_dims': grid['hidden_dims'],
+        'hidden_dim': grid['hidden_dim'],
         'out_features': 1,
         'dropout': 0.2
     }
@@ -82,13 +82,13 @@ def main():
 
     # Iterate through all combinations of hyperparameters
     for params in product(*grid.values()):
-        out_channels, kernel_size, hidden_dims, lr, epochs, batch_size = params
+        out_channels, kernel_size, hidden_dim, lr, epochs, batch_size = params
 
         # Write config file
         config = {
             'out_channels': out_channels,
             'kernel_size': kernel_size,
-            'hidden_dims': hidden_dims,
+            'hidden_dim': hidden_dim,
             'lr': lr,
             'epochs': epochs,
             'batch_size': batch_size

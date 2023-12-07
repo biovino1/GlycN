@@ -5,9 +5,9 @@ __author__ = "Ben Iovino"
 __date__ = "10/31/23"
 """
 
+import argparse
 import logging
 import os
-import sys
 import numpy as np
 import torch
 from torch import nn
@@ -19,7 +19,10 @@ from embed import PytorchDataset
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_curve, auc
 
-logging.basicConfig(level=logging.INFO, format='%(message)s', stream=sys.stdout)
+log_filename = 'data/logs/kfold.log'  #pylint: disable=C0103
+os.makedirs(os.path.dirname(log_filename), exist_ok=True)
+logging.basicConfig(filename=log_filename, filemode='w',
+                     level=logging.INFO, format='%(message)s')
 
 torch.cuda.set_per_process_memory_fraction(0.8)
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
@@ -170,11 +173,16 @@ def main():
     """Main function
     """
 
+    # Argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', type=str, default='scripts/config.yaml', help='config file')
+    args = parser.parse_args()
+
     if not os.path.exists('data/models'):
         os.makedirs('data/models')
 
     # Define model parameters and device for training
-    with open('scripts/config.yaml', 'r', encoding='utf8') as cfile:
+    with open(args.c, 'r', encoding='utf8') as cfile:
         config = yaml.safe_load(cfile)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

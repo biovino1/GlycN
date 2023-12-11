@@ -49,7 +49,7 @@ def write_config(grid: dict):
 
     # Separate next 4 hyperparameters into FeedForwardBlock
     feedforward_block = {
-        'in_features': grid['out_channels'] * 2558,
+        'in_features': 2559*grid['out_channels'] - (grid['kernel_size'] - 2),
         'hidden_dim': grid['hidden_dim'],
         'out_features': 1,
         'dropout': 0.2
@@ -69,8 +69,7 @@ def write_config(grid: dict):
         'GlycN': glyc_n
     }
 
-
-    with open('gsearch.yaml', 'w', encoding='utf8') as f:
+    with open('scripts/gsearch.yaml', 'w', encoding='utf8') as f:
         yaml.dump(grid, f)
 
 
@@ -82,7 +81,7 @@ def main():
 
     # Iterate through all combinations of hyperparameters
     for params in product(*grid.values()):
-        out_channels, kernel_size, hidden_dim, lr, epochs, batch_size = params
+        lr, epochs, batch_size, hidden_dim, kernel_size, out_channels = params
 
         # Write config file
         config = {
@@ -98,7 +97,7 @@ def main():
         # Run model and send stdout to log file
         logging.info('%s: Running model with params: %s, %s, %s, %s, %s, %s',
                      datetime.datetime.now(), *params)
-        os.system('python scripts/kfold.py >> data/logs/grid_search.log')
+        os.system('python scripts/kfold.py -c scripts/gsearch.yaml')
 
 
 if __name__ == '__main__':

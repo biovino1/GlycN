@@ -4,38 +4,30 @@ __author__ = "Ben Iovino"
 __date__ = 08/28/2023
 """
 
-import os
 import parse_all
 import parse_swissprot
+from Bio import SeqIO
 
 
 def get_seqs(file: str) -> dict:
-    """Returns a dict of sequences from both pos_seqs.txt and neg_seqs.txt
+    """Returns a dict of sequences from a fasta file.
 
     :param file: path to the file
     :return: dict where key is ACC and value is a list of
       [position, source, glyc_label (pos/neg), sequence]
     """
 
-    # Read and delete file
-    with open(file, 'r', encoding='utf8') as sfile:
-        seqs = sfile.readlines()
-    os.remove(file)
+    seqs = {}
+    label = file.split('_')[0].split('/')[-1]  # pos or neg
+    for seq in SeqIO.parse(file, 'fasta'):
+        desc = seq.description.split('\t')
+        seqs[seq.id] = [desc[1], desc[2], label, str(seq.seq)]
 
-    # Make dict
-    seq_dict = {}
-    label = file.split('_')[0].split('/')[-1]
-    for i, seq in enumerate(seqs):
-        if seq[0] != '>':
-            continue
-        seq = seq.split('\t')
-        seq_dict[seq[0].strip('>')] = [seq[1], seq[2].strip(), label, seqs[i+1].strip()]
-
-    return seq_dict
+    return seqs
 
 
 def main():
-    """
+    """Main function
     """
 
     # Call parse_all.py and parse_swissprot.py
@@ -43,14 +35,15 @@ def main():
     parse_swissprot.main()
 
     # Read sequences from both files and combine dictionaries
-    pos_seqs = get_seqs('data/pos_seqs.txt')
-    neg_seqs = get_seqs('data/neg_seqs.txt')
+    pos_seqs = get_seqs('data/pos_seqs.fa')
+    neg_seqs = get_seqs('data/neg_seqs.fa')
     seqs = {**pos_seqs, **neg_seqs}
 
     # Write to file
-    with open('data/all_seqs.txt', 'w', encoding='utf8') as afile:
+    with open('data/all_seqs.fa', 'w', encoding='utf8') as afile:
         for acc, info in seqs.items():
-            afile.write(f'>{acc}\t{info[0]}\t{info[1]}\t{info[2]}\n{info[3]}\n')
+            afile.write(f'>{acc}\t{info[0]}\t{info[1]}\t{info[2]}\n')
+            afile.write(f'{info[3]}\n')
 
 
 if __name__ == '__main__':

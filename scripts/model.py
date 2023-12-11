@@ -17,7 +17,7 @@ class ConvBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, kernel_size):
         super().__init__()
-        self.conv1d = nn.Conv1d(in_channels, out_channels, kernel_size, padding=1)
+        self.conv1d = nn.Conv1d(in_channels, out_channels, kernel_size)
         self.bn = nn.BatchNorm1d(out_channels)
         self.flatten = nn.Flatten()
 

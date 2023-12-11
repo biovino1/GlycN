@@ -48,6 +48,8 @@ def get_seqs(file: str) -> dict:
 
             # Get sequence if nuclear or mitochondrial
             mito, nuclear = check_locs(row)
+            if len(row[15]) > 10000:  # Can't embed seqs this long
+                continue
             if mito or nuclear:
                 seqs[row[1]] = [mito, nuclear, row[15]]
 
@@ -100,7 +102,7 @@ def write_seqs(seqs: dict):
         sites = ':'.join([str(s) for s in sites])  # Convert ints to strings for writing
 
         # Write id, subcellular location, sequon locations, and sequnce to file
-        with open('data/neg_seqs.txt', 'a', encoding='utf8') as sfile:
+        with open('data/neg_seqs.fa', 'a', encoding='utf8') as sfile:
             sfile.write(f'>{seq}\t{sites}\t{sources}\n')
             sfile.write(f'{values[2]}\n')
 

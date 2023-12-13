@@ -48,8 +48,6 @@ def get_seqs(file: str) -> dict:
 
             # Get sequence if nuclear or mitochondrial
             mito, nuclear = check_locs(row)
-            if len(row[15]) > 10000:  # Can't embed seqs this long
-                continue
             if mito or nuclear:
                 seqs[row[1]] = [mito, nuclear, row[15]]
 

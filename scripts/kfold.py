@@ -11,13 +11,12 @@ import os
 import numpy as np
 import torch
 from torch import nn
-from torch import optim
 from torch.utils.data import DataLoader, SubsetRandomSampler
 import yaml
 from model import GlycN
 from embed import PytorchDataset
 from sklearn.model_selection import KFold
-from sklearn.metrics import roc_curve, auc
+from train import train_model, get_metrics
 
 log_filename = 'data/logs/kfold.log'  #pylint: disable=C0103
 os.makedirs(os.path.dirname(log_filename), exist_ok=True)
@@ -26,49 +25,6 @@ logging.basicConfig(filename=log_filename, filemode='w',
 
 torch.cuda.set_per_process_memory_fraction(0.8)
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
-
-
-def conf_mat(outputs: list, labels: list) -> tuple:
-    """Returns confusion matrix for given outputs and labels.
-    
-    :param outputs: list of model outputs
-    :param labels: list of labels
-    :return tuple: confusion matrix (tn, fp, fn, tp)
-    """
-
-    tn, fp, fn, tp = 0, 0, 0, 0
-    for i, output in enumerate(outputs):
-        if output == 0 and labels[i] == 0:
-            tn += 1
-        elif output == 1 and labels[i] == 0:
-            fp += 1
-        elif output == 0 and labels[i] == 1:
-            fn += 1
-        elif output == 1 and labels[i] == 1:
-            tp += 1
-
-    return (tn, fp, fn, tp)
-
-
-def get_metrics(outputs: list, labels: list) -> tuple:
-    """Returns accuracy, precision, recall, F1, AUC, MCC for given outputs and labels.
-
-    :param outputs: list of model outputs
-    :param labels: list of labels
-    :return tuple: accuracy, precision, recall, F1, AUC, MCC
-    """
-
-    # Calculate metrics
-    tn, fp, fn, tp = conf_mat(outputs, labels)
-    acc = (tp + tn) / len(outputs)
-    prec = tp / (tp + fp) if tp + fp != 0 else 0
-    rec = tp / (tp + fn) if tp + fn != 0 else 0
-    f1 = 2 * prec * rec / (prec + rec) if prec + rec != 0 else 0
-    fpr, tpr, _ = roc_curve(labels, outputs, pos_label=1)
-    aucs = auc(fpr, tpr)
-    mcc = (tp * tn - fp * fn) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-
-    return (acc, prec, rec, f1, aucs, mcc)
 
 
 def validate(
@@ -134,41 +90,6 @@ def report_results(results: dict):
     logging.info('')
 
 
-def train(config: dict, train_loader: DataLoader, device: str) -> GlycN:
-    """Returns trained model.
-    
-    :param config: dict with model parameters
-    :param train_data: training data
-    :param device: device for training
-    :return GlycN: trained model
-    """
-
-    model = GlycN(config)
-    model.to(device)
-
-    # Loss function and optimizer
-    criterion = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=config['GlycN']['lr'])
-
-    # Training loop
-    for _ in range(10):
-        model.train()
-        for batch in train_loader:
-            data = batch['embed'].to(device)
-            labels = batch['label'].to(device).float()
-
-            # Get outputs and calculate loss
-            outputs = model(data).flatten()
-            loss = criterion(outputs, labels)
-
-            # Backpropagation and optimization
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-    return model
-
-
 def main():
     """Main function
     """
@@ -206,7 +127,7 @@ def main():
         val_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=val_subsampler)
 
         # Train model
-        model = train(config, train_loader, device)
+        model = train_model(config, train_loader, device)
 
         # Evaluate on validation data for this fold
         criterion = nn.BCELoss()

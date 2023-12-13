@@ -20,6 +20,8 @@ def get_seqs(file: str) -> dict:
     seqs = {}
     label = file.split('_')[0].split('/')[-1]  # pos or neg
     for seq in SeqIO.parse(file, 'fasta'):
+        if len(seq.seq) > 10000:  # too long to embed
+            continue
         desc = seq.description.split('\t')
         seqs[seq.id] = [desc[1], desc[2], label, str(seq.seq)]
 
